@@ -2762,7 +2762,16 @@ describe('ui-select tests', function() {
          expect(el.scope().$select.selected.length).toBe(1);
          clickItem(el, 'Wladimir');
          expect(el.scope().$select.selected.length).toBe(2);
-     });
+    });
+
+    it('should not allow duplicate objects if unique object key is specified', function() {
+        var el = createUiSelectMultiple({objectUniqueKey: "name"});
+        expect(el.scope().$select.selected.length).toBe(0);
+        clickItem(el, 'Samantha');
+        expect(el.scope().$select.selected.length).toBe(1);
+        clickItem(el, 'Samantha');
+        expect(el.scope().$select.selected.length).toBe(1);
+    });
 
   describe('resetSearchInput option multiple', function () {
       it('should be true by default', function () {
