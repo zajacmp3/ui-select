@@ -46,6 +46,7 @@ uis.controller('uiSelectCtrl',
   ctrl.clickTriggeredSelect = false;
   ctrl.$filter = $filter;
   ctrl.$element = $element;
+  ctrl.objectUniqueKey = undefined;
 
   // Use $injector to check for $animate and store a reference to it
   ctrl.$animate = (function () {
@@ -330,9 +331,13 @@ uis.controller('uiSelectCtrl',
     return isActive;
   };
 
+  function _getKeyForComparison(item) {
+    return ctrl.objectUniqueKey === undefined ? item : item[ctrl.objectUniqueKey];
+  }
+
   var _isItemSelected = function (item) {
     return (ctrl.selected && angular.isArray(ctrl.selected) &&
-        ctrl.selected.filter(function (selection) { return angular.equals(selection, item); }).length > 0);
+        ctrl.selected.filter(function (selection) { return angular.equals(_getKeyForComparison(selection), _getKeyForComparison(item)); }).length > 0);
   };
 
   var disabledItems = [];
@@ -430,7 +435,7 @@ uis.controller('uiSelectCtrl',
             ctrl.close(skipFocusser);
             return;
           }
-        }        
+        }
         _resetSearchInput();
         $scope.$broadcast('uis:select', item);
 
