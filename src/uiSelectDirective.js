@@ -123,12 +123,9 @@ uis.directive('uiSelect',
 
         $select.objectUniqueKey = $parse(attrs.objectUniqueKey);
         attrs.$observe('objectUniqueKey', function() {
-          if(attrs.objectUniqueKey !== undefined)
-          {
+          if(attrs.objectUniqueKey !== undefined) {
             $select.objectUniqueKey = attrs.objectUniqueKey;
-          }
-          else
-          {
+          } else {
             $select.objectUniqueKey = undefined;
           }
         });
