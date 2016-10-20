@@ -121,6 +121,18 @@ uis.directive('uiSelect',
           }
         });
 
+        $select.objectUniqueKey = $parse(attrs.objectUniqueKey);
+        attrs.$observe('objectUniqueKey', function() {
+          if(attrs.objectUniqueKey !== undefined)
+          {
+            $select.objectUniqueKey = attrs.tagging;
+          }
+          else
+          {
+            $select.objectUniqueKey = undefined;
+          }
+        });
+
         attrs.$observe('taggingLabel', function() {
           if(attrs.tagging !== undefined )
           {
@@ -372,7 +384,7 @@ uis.directive('uiSelect',
         };
 
         var opened = false;
-        
+
         scope.calculateDropdownPos = function() {
           if ($select.open) {
             dropdown = angular.element(element).querySelectorAll('.ui-select-dropdown');
