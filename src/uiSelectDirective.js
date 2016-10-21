@@ -121,14 +121,11 @@ uis.directive('uiSelect',
           }
         });
 
-        $select.objectUniqueKey = $parse(attrs.objectUniqueKey);
+        $select.objectUniqueKey = attrs.objectUniqueKey;
         attrs.$observe('objectUniqueKey', function() {
-          if(attrs.objectUniqueKey !== undefined)
-          {
-            $select.objectUniqueKey = attrs.tagging;
-          }
-          else
-          {
+          if(attrs.objectUniqueKey !== undefined) {
+            $select.objectUniqueKey = attrs.objectUniqueKey;
+          } else {
             $select.objectUniqueKey = undefined;
           }
         });
