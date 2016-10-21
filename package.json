@@ -1,13 +1,13 @@
 {
-  "name": "ui-select",
+  "name": "ui-select_duplicate_hot_fix",
   "main": "./index.js",
   "author": "http://github.com/angular-ui/ui-select/graphs/contributors",
-  "homepage": "http://github.com/angular-ui/ui-select",
+  "homepage": "http://github.com/zajacmp3/ui-select",
   "repository": {
-    "url": "git://github.com/angular-ui/ui-select.git"
+    "url": "git://github.com/zajacmp3/ui-select.git"
   },
   "style": "dist/select.css",
-  "version": "0.19.5",
+  "version": "0.19.5.1",
   "devDependencies": {
     "angular": "^1.2.18",
     "angular-mocks": "^1.2.18",
