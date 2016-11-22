@@ -167,6 +167,7 @@ describe('ui-select tests', function() {
       if (attrs.spinnerClass !== undefined) { attrsHtml += ' spinner-class="' + attrs.spinnerClass + '"'; }
       if (attrs.refresh !== undefined) { choicesAttrsHtml += ' refresh="' + attrs.refresh + '"'; }
       if (attrs.refreshDelay !== undefined) { choicesAttrsHtml += ' refresh-delay="' + attrs.refreshDelay + '"'; }
+      if (attrs.backspaceReset !== undefined) { attrsHtml += ' backspace-reset="' + attrs.backspaceReset + '"';}
     }
 
     return compileTemplate(
@@ -806,6 +807,26 @@ describe('ui-select tests', function() {
     scope.selection.selected = '';
     scope.$digest();
     expect(getMatchLabel(el)).toEqual('-- None Selected --');
+  });
+
+  describe('backspace reset option', function(){
+    it('should undefined model when pressing BACKSPACE key if backspaceReset=true', function() {
+      var el = createUiSelect();
+      var focusserInput = el.find('.ui-select-focusser');
+
+      clickItem(el, 'Samantha');
+      triggerKeydown(focusserInput, Key.Backspace);
+      expect(scope.selection.selected).toBeUndefined();
+    });
+
+    it('should NOT reset model when pressing BACKSPACE key if backspaceReset=false', function() {
+      var el = createUiSelect({backspaceReset: false});
+      var focusserInput = el.find('.ui-select-focusser');
+
+      clickItem(el, 'Samantha');
+      triggerKeydown(focusserInput, Key.Backspace);
+      expect(scope.selection.selected).toBe(scope.people[5]);
+    });
   });
 
   describe('disabled options', function() {
@@ -1819,6 +1840,8 @@ describe('ui-select tests', function() {
             if (attrs.lockChoice !== undefined) { matchesAttrsHtml += ' ui-lock-choice="' + attrs.lockChoice + '"'; }
             if (attrs.removeSelected !== undefined) { attrsHtml += ' remove-selected="' + attrs.removeSelected + '"'; }
             if (attrs.resetSearchInput !== undefined) { attrsHtml += ' reset-search-input="' + attrs.resetSearchInput + '"'; }
+            if (attrs.limit !== undefined) { attrsHtml += ' limit="' + attrs.limit + '"'; }
+            if (attrs.onSelect !== undefined) { attrsHtml += ' on-select="' + attrs.onSelect + '"'; }
         }
 
         return compileTemplate(
@@ -2771,6 +2794,51 @@ describe('ui-select tests', function() {
         expect(el.scope().$select.selected.length).toBe(1);
         clickItem(el, 'Samantha');
         expect(el.scope().$select.selected.length).toBe(1);
+    });
+
+     it('should set only 1 item in the selected items when limit = 1', function () {
+         var el = createUiSelectMultiple({limit: 1});
+         clickItem(el, 'Wladimir');
+         clickItem(el, 'Natasha');
+         expect(el.scope().$select.selected.length).toEqual(1);
+    });
+
+    it('should only have 1 item selected and onSelect function should only be handled once.',function(){
+        scope.onSelectFn = function ($item, $model) {
+          scope.$item = $item;
+          scope.$model = $model;
+        };
+        var el = createUiSelectMultiple({limit:1,onSelect:'onSelectFn($item, $model)'});
+
+        expect(scope.$item).toBeFalsy();
+        expect(scope.$model).toBeFalsy();
+
+        clickItem(el, 'Samantha');
+        $timeout.flush();
+        clickItem(el, 'Natasha');
+        $timeout.flush();
+        expect(scope.selection.selectedMultiple[0].name).toBe('Samantha');
+        expect(scope.$model.name).toEqual('Samantha');
+        expect(el.scope().$select.selected.length).toEqual(1);
+    });
+
+    it('should only have 2 items selected and onSelect function should be handeld.',function(){
+        scope.onSelectFn = function ($item, $model) {
+          scope.$item = $item;
+          scope.$model = $model;
+        };
+        var el = createUiSelectMultiple({onSelect:'onSelectFn($item, $model)'});
+
+        expect(scope.$item).toBeFalsy();
+        expect(scope.$model).toBeFalsy();
+
+        clickItem(el, 'Samantha');
+        $timeout.flush();
+        expect(scope.$model.name).toEqual('Samantha');
+        clickItem(el, 'Natasha');
+        $timeout.flush();
+        expect(scope.$model.name).toEqual('Natasha');
+        expect(el.scope().$select.selected.length).toEqual(2);
     });
 
   describe('resetSearchInput option multiple', function () {

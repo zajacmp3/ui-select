@@ -1,7 +1,7 @@
 /*!
- * ui-select_duplicate_hot_fix
- * http://github.com/zajacmp3/ui-select
- * Version: 0.19.5.1 - 2016-10-26T20:17:30.615Z
+ * ui-select
+ * http://github.com/angular-ui/ui-select
+ * Version: 0.19.5 - 2016-10-24T23:13:59.434Z
  * License: MIT
  */
 
@@ -322,7 +322,6 @@ uis.controller('uiSelectCtrl',
   ctrl.clickTriggeredSelect = false;
   ctrl.$filter = $filter;
   ctrl.$element = $element;
-  ctrl.objectUniqueKey = undefined;
 
   // Use $injector to check for $animate and store a reference to it
   ctrl.$animate = (function () {
@@ -607,13 +606,9 @@ uis.controller('uiSelectCtrl',
     return isActive;
   };
 
-  function _getKeyForComparison(item) {
-    return ctrl.objectUniqueKey === undefined ? item : item[ctrl.objectUniqueKey];
-  }
-
   var _isItemSelected = function (item) {
     return (ctrl.selected && angular.isArray(ctrl.selected) &&
-        ctrl.selected.filter(function (selection) { return angular.equals(_getKeyForComparison(selection), _getKeyForComparison(item)); }).length > 0);
+        ctrl.selected.filter(function (selection) { return angular.equals(selection, item); }).length > 0);
   };
 
   var disabledItems = [];
@@ -664,7 +659,7 @@ uis.controller('uiSelectCtrl',
   ctrl.select = function(item, skipFocusser, $event) {
     if (item === undefined || !_isItemDisabled(item)) {
 
-      if ( (!ctrl.items || !ctrl.items.length) && ! ctrl.search && ! ctrl.tagging.isActivated) return;
+      if ( ! ctrl.items && ! ctrl.search && ! ctrl.tagging.isActivated) return;
 
       if (!item || !_isItemDisabled(item)) {
         // if click is made on existing item, prevent from tagging, ctrl.search does not matter
@@ -711,7 +706,7 @@ uis.controller('uiSelectCtrl',
             ctrl.close(skipFocusser);
             return;
           }
-        }
+        }        
         _resetSearchInput();
         $scope.$broadcast('uis:select', item);
 
@@ -892,11 +887,6 @@ uis.controller('uiSelectCtrl',
       e.stopPropagation();
     }
 
-    // if(~[KEY.ESC,KEY.TAB].indexOf(key)){
-    //   //TODO: SEGURO?
-    //   ctrl.close();
-    // }
-
     $scope.$apply(function() {
 
       var tagged = false;
@@ -926,9 +916,6 @@ uis.controller('uiSelectCtrl',
             });
           }
         }
-      }else{
-        e.preventDefault();
-        e.stopPropagation();
       }
 
     });
@@ -1165,15 +1152,6 @@ uis.directive('uiSelect',
           else
           {
             $select.tagging = {isActivated: false, fct: undefined};
-          }
-        });
-
-        $select.objectUniqueKey = attrs.objectUniqueKey;
-        attrs.$observe('objectUniqueKey', function() {
-          if(attrs.objectUniqueKey !== undefined) {
-            $select.objectUniqueKey = attrs.objectUniqueKey;
-          } else {
-            $select.objectUniqueKey = undefined;
           }
         });
 
@@ -1428,7 +1406,7 @@ uis.directive('uiSelect',
         };
 
         var opened = false;
-
+        
         scope.calculateDropdownPos = function() {
           if ($select.open) {
             dropdown = angular.element(element).querySelectorAll('.ui-select-dropdown');
