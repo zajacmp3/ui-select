@@ -21,7 +21,6 @@ uis.controller('uiSelectCtrl',
   ctrl.refreshing = false;
   ctrl.spinnerEnabled = uiSelectConfig.spinnerEnabled;
   ctrl.spinnerClass = uiSelectConfig.spinnerClass;
-
   ctrl.removeSelected = uiSelectConfig.removeSelected; //If selected item(s) should be removed from dropdown list
   ctrl.closeOnSelect = true; //Initialized inside uiSelect directive link function
   ctrl.skipFocusser = false; //Set to true to avoid returning focus to ctrl when item is selected
@@ -64,7 +63,7 @@ uis.controller('uiSelectCtrl',
   }
 
   ctrl.isEmpty = function() {
-    return angular.isUndefined(ctrl.selected) || ctrl.selected === null || ctrl.selected === '' || (ctrl.multiple && ctrl.selected.length === 0);
+    return isNil(ctrl.selected) || ctrl.selected === '' || (ctrl.multiple && ctrl.selected.length === 0);
   };
 
   function _findIndex(collection, predicate, thisArg){
@@ -90,10 +89,14 @@ uis.controller('uiSelectCtrl',
     if (ctrl.resetSearchInput) {
       ctrl.search = EMPTY_SEARCH;
       //reset activeIndex
-      if (ctrl.selected && ctrl.items.length && !ctrl.multiple) {
-        ctrl.activeIndex = _findIndex(ctrl.items, function(item){
-          return angular.equals(this, item);
-        }, ctrl.selected);
+      if (!ctrl.multiple) {
+        if (ctrl.selected && ctrl.items.length) {
+          ctrl.activeIndex = _findIndex(ctrl.items, function(item){
+            return angular.equals(this, item);
+          }, ctrl.selected);
+        } else {
+          ctrl.activeIndex = 0;
+        }
       }
     }
   }
@@ -116,11 +119,8 @@ uis.controller('uiSelectCtrl',
       if(!avoidReset) _resetSearchInput();
 
       $scope.$broadcast('uis:activate');
-
       ctrl.open = true;
-
       ctrl.activeIndex = ctrl.activeIndex >= ctrl.items.length ? 0 : ctrl.activeIndex;
-
       // ensure that the index is set to zero for tagging variants
       // that where first option is auto-selected
       if ( ctrl.activeIndex === -1 && ctrl.taggingLabel !== false ) {
@@ -206,7 +206,7 @@ uis.controller('uiSelectCtrl',
     }
 
     function setPlainItems(items) {
-      ctrl.items = items;
+      ctrl.items = items || [];
     }
 
     ctrl.setItemsFn = groupByExp ? updateGroups : setPlainItems;
@@ -258,7 +258,6 @@ uis.controller('uiSelectCtrl',
       if (ctrl.dropdownPosition === 'auto' || ctrl.dropdownPosition === 'up'){
         $scope.calculateDropdownPos();
       }
-
       $scope.$broadcast('uis:refresh');
     };
 
@@ -303,13 +302,16 @@ uis.controller('uiSelectCtrl',
         $timeout.cancel(_refreshDelayPromise);
       }
       _refreshDelayPromise = $timeout(function() {
-        var refreshPromise =  $scope.$eval(refreshAttr);
-        if (refreshPromise && angular.isFunction(refreshPromise.then) && !ctrl.refreshing) {
-          ctrl.refreshing = true;
-          refreshPromise.then(function() {
-            ctrl.refreshing = false;
-          });
-      }}, ctrl.refreshDelay);
+        if ($scope.$select.search.length >= $scope.$select.minimumInputLength) {
+          var refreshPromise = $scope.$eval(refreshAttr);
+          if (refreshPromise && angular.isFunction(refreshPromise.then) && !ctrl.refreshing) {
+            ctrl.refreshing = true;
+            refreshPromise.finally(function() {
+              ctrl.refreshing = false;
+            });
+          }
+        }
+      }, ctrl.refreshDelay);
     }
   };
 
@@ -386,9 +388,9 @@ uis.controller('uiSelectCtrl',
 
   // When the user selects an item with ENTER or clicks the dropdown
   ctrl.select = function(item, skipFocusser, $event) {
-    if (item === undefined || !_isItemDisabled(item)) {
+    if (isNil(item) || !_isItemDisabled(item)) {
 
-      if ( (!ctrl.items || !ctrl.items.length) && ! ctrl.search && ! ctrl.tagging.isActivated) return;
+      if ( ! ctrl.items && ! ctrl.search && ! ctrl.tagging.isActivated) return;
 
       if (!item || !_isItemDisabled(item)) {
         // if click is made on existing item, prevent from tagging, ctrl.search does not matter
@@ -439,16 +441,6 @@ uis.controller('uiSelectCtrl',
         _resetSearchInput();
         $scope.$broadcast('uis:select', item);
 
-        var locals = {};
-        locals[ctrl.parserResult.itemName] = item;
-
-        $timeout(function(){
-          ctrl.onSelectCallback($scope, {
-            $item: item,
-            $model: ctrl.parserResult.modelMapper($scope, locals)
-          });
-        });
-
         if (ctrl.closeOnSelect) {
           ctrl.close(skipFocusser);
         }
@@ -471,7 +463,7 @@ uis.controller('uiSelectCtrl',
   };
 
   ctrl.clear = function($event) {
-    ctrl.select(undefined);
+    ctrl.select(null);
     $event.stopPropagation();
     $timeout(function() {
       ctrl.focusser[0].focus();
@@ -482,11 +474,11 @@ uis.controller('uiSelectCtrl',
   ctrl.toggle = function(e) {
     if (ctrl.open) {
       ctrl.close();
-      e.preventDefault();
-      e.stopPropagation();
     } else {
       ctrl.activate();
     }
+    e.preventDefault();
+    e.stopPropagation();
   };
 
   // Set default function for locked choices - avoids unnecessary
@@ -511,7 +503,7 @@ uis.controller('uiSelectCtrl',
         }
 
       if (!isLocked && lockedItemIndex > -1) {
-        lockedItems.splice(lockedItemIndex, 0);
+        lockedItems.splice(lockedItemIndex, 1);
       }
     }
 
@@ -542,7 +534,7 @@ uis.controller('uiSelectCtrl',
   ctrl.sizeSearchInput = function() {
 
     var input = ctrl.searchInput[0],
-        container = ctrl.searchInput.parent().parent()[0],
+        container = ctrl.$element[0],
         calculateContainerWidth = function() {
           // Return the container width only if the search input is visible
           return container.clientWidth * !!input.offsetParent;
@@ -551,7 +543,7 @@ uis.controller('uiSelectCtrl',
           if (containerWidth === 0) {
             return false;
           }
-          var inputWidth = containerWidth - input.offsetLeft - 10;
+          var inputWidth = containerWidth - input.offsetLeft;
           if (inputWidth < 50) inputWidth = containerWidth;
           ctrl.searchInput.css('width', inputWidth+'px');
           return true;
@@ -581,11 +573,22 @@ uis.controller('uiSelectCtrl',
     switch (key) {
       case KEY.DOWN:
         if (!ctrl.open && ctrl.multiple) ctrl.activate(false, true); //In case its the search input in 'multiple' mode
-        else if (ctrl.activeIndex < ctrl.items.length - 1) { ctrl.activeIndex++; }
+        else if (ctrl.activeIndex < ctrl.items.length - 1) {
+          var idx = ++ctrl.activeIndex;
+          while(_isItemDisabled(ctrl.items[idx]) && idx < ctrl.items.length) {
+            ctrl.activeIndex = ++idx;
+          }
+        }
         break;
       case KEY.UP:
+        var minActiveIndex = (ctrl.search.length === 0 && ctrl.tagging.isActivated) ? -1 : 0;
         if (!ctrl.open && ctrl.multiple) ctrl.activate(false, true); //In case its the search input in 'multiple' mode
-        else if (ctrl.activeIndex > 0 || (ctrl.search.length === 0 && ctrl.tagging.isActivated && ctrl.activeIndex > -1)) { ctrl.activeIndex--; }
+        else if (ctrl.activeIndex > minActiveIndex) {
+          var idxmin = --ctrl.activeIndex;
+          while(_isItemDisabled(ctrl.items[idxmin]) && idxmin > minActiveIndex) {
+            ctrl.activeIndex = --idxmin;
+          }
+        }
         break;
       case KEY.TAB:
         if (!ctrl.multiple || ctrl.open) ctrl.select(ctrl.items[ctrl.activeIndex], true);
@@ -616,11 +619,6 @@ uis.controller('uiSelectCtrl',
       e.stopPropagation();
     }
 
-    // if(~[KEY.ESC,KEY.TAB].indexOf(key)){
-    //   //TODO: SEGURO?
-    //   ctrl.close();
-    // }
-
     $scope.$apply(function() {
 
       var tagged = false;
@@ -650,9 +648,6 @@ uis.controller('uiSelectCtrl',
             });
           }
         }
-      }else{
-        e.preventDefault();
-        e.stopPropagation();
       }
 
     });
